@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SG-SST | ESE Hospital San Rafael de Cáqueza – Inducción</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body class="login-body">
+
+  <!-- ============================================================
+       PANTALLA DE BIENVENIDA / LOGIN
+       ============================================================ -->
+  <div class="login-bg">
+    <!-- Decoración de fondo -->
+    <div class="login-blob login-blob-1"></div>
+    <div class="login-blob login-blob-2"></div>
+    <div class="login-blob login-blob-3"></div>
+
+    <div class="login-wrapper">
+
+      <!-- PANEL IZQUIERDO: Branding -->
+      <div class="login-brand-panel">
+
+        <!-- Imagen de portada 3D -->
+        <div class="brand-portada-wrap">
+          <img src="img/portada.png" alt="Inducción SG-SST Hospital Cáqueza" class="brand-portada-img"
+               onerror="this.parentElement.style.display='none'" />
+        </div>
+
+        <!-- Logo institucional -->
+        <div class="brand-logo-container">
+          <img src="img/logo.png" alt="ESE Hospital San Rafael de Cáqueza"
+               class="brand-logo-img"
+               onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex'" />
+          <div id="logo-fallback" class="brand-logo-circle" style="display:none">
+            <span class="brand-logo-emoji">🏥</span>
+          </div>
+        </div>
+
+        <h1 class="brand-title">ESE Hospital San Rafael<br>de Cáqueza</h1>
+
+        <!-- Eslogan corporativo -->
+        <p class="brand-eslogan">
+          "Cuidarte es nuestra prioridad,<br>prevenir es responsabilidad de todos."
+        </p>
+
+        <p class="brand-subtitle">Sistema de Gestión de Seguridad<br>y Salud en el Trabajo · 2026</p>
+
+        <div class="brand-badges">
+          <span class="brand-badge">📋 10 Módulos</span>
+          <span class="brand-badge">🏆 Certificación</span>
+          <span class="brand-badge">⚡ Interactivo</span>
+        </div>
+
+        <p class="brand-desc">
+          Completa los 10 módulos, aprueba las evaluaciones y obtén tu certificado digital.
+        </p>
+      </div>
+
+      <!-- PANEL DERECHO: Formularios -->
+      <div class="login-form-panel">
+
+        <!-- TABS -->
+        <div class="login-tabs" role="tablist">
+          <button class="login-tab active" id="tab-login" role="tab"
+                  onclick="switchTab('login')" aria-selected="true">
+            Iniciar sesión
+          </button>
+          <button class="login-tab" id="tab-register" role="tab"
+                  onclick="switchTab('register')" aria-selected="false">
+            Registrarse
+          </button>
+        </div>
+
+        <!-- ======= FORMULARIO LOGIN ======= -->
+        <div id="form-login" class="login-form-section">
+          <h2 class="form-title">Bienvenido</h2>
+          <p class="form-hint">Ingresa con tus credenciales para continuar.</p>
+
+          <div id="login-alert" class="alert alert-error" style="display:none"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-user">Usuario</label>
+            <input type="text" id="login-user" class="form-control"
+                   placeholder="Ingresa tu usuario o documento"
+                   autocomplete="username" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-pass">Contraseña</label>
+            <div class="input-password-wrapper">
+              <input type="password" id="login-pass" class="form-control"
+                     placeholder="Ingresa tu contraseña"
+                     autocomplete="current-password"
+                     onkeydown="if(event.key==='Enter') doLogin()" />
+              <button type="button" class="btn-toggle-pass" onclick="togglePassword('login-pass', this)"
+                      title="Mostrar/ocultar contraseña">👁️</button>
+            </div>
+          </div>
+
+          <div class="login-hint-box">
+            <span>💡</span>
+            <strong>Invitados:</strong> usuario y contraseña = número de documento</span>
+          </div>
+
+          <button class="btn btn-primary btn-block btn-lg mt-2" onclick="doLogin()" id="btn-login">
+            🔑 Iniciar sesión
+          </button>
+        </div>
+
+        <!-- ======= FORMULARIO REGISTRO ======= -->
+        <div id="form-register" class="login-form-section" style="display:none">
+          <h2 class="form-title">Crear cuenta</h2>
+          <p class="form-hint">Completa el formulario para registrarte en la plataforma.</p>
+
+          <div id="register-alert" class="alert alert-error" style="display:none"></div>
+          <div id="register-success" class="alert alert-success" style="display:none"></div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="reg-nombre">Nombre completo *</label>
+              <input type="text" id="reg-nombre" class="form-control" placeholder="Nombres y apellidos" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-documento">N.º de documento *</label>
+              <input type="text" id="reg-documento" class="form-control" placeholder="CC / CE / NIT" />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="reg-cargo">Cargo *</label>
+              <input type="text" id="reg-cargo" class="form-control" placeholder="Ej. Auxiliar de enfermería" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-area">Área / Servicio *</label>
+              <input type="text" id="reg-area" class="form-control" placeholder="Ej. Urgencias" />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="reg-vinculacion">Tipo de vinculación *</label>
+              <select id="reg-vinculacion" class="form-control form-select">
+                <option value="">-- Selecciona --</option>
+                <option value="Planta">Planta</option>
+                <option value="Contratista">Contratista</option>
+                <option value="Pasante">Pasante / Práctica</option>
+                <option value="Provisional">Provisional</option>
+                <option value="Cooperativa">Cooperativa</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reg-sede">Sede *</label>
+              <select id="reg-sede" class="form-control form-select">
+                <option value="">-- Selecciona --</option>
+                <option value="Hospital San Rafael de Cáqueza">Hospital San Rafael de Cáqueza</option>
+                <option value="Centro de Salud Guayabetal">Centro de Salud Guayabetal</option>
+                <option value="Centro de Salud Quetame">Centro de Salud Quetame</option>
+                <option value="Centro de Salud Gutierrez">Centro de Salud Gutierrez</option>
+                <option value="Centro de Salud Chipaque">Centro de Salud Chipaque</option>
+                <option value="Puesto de Salud Puente Quetame">Puesto de Salud Puente Quetame</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-correo">Correo electrónico</label>
+            <input type="email" id="reg-correo" class="form-control" placeholder="correo@ejemplo.com" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-formacion">Tipo de formación *</label>
+            <select id="reg-formacion" class="form-control form-select">
+              <option value="">-- Selecciona --</option>
+              <option value="Inducción">Inducción (nuevo ingreso)</option>
+              <option value="Reinducción">Reinducción (anual)</option>
+            </select>
+          </div>
+
+          <!-- Aviso de privacidad -->
+          <div class="privacy-box">
+            <label class="privacy-label">
+              <input type="checkbox" id="reg-privacidad" />
+              <span>
+                He leído y acepto el
+                <a href="#" onclick="showPrivacidad(event)">Aviso de Privacidad</a>
+                de la ESE Hospital San Rafael de Cáqueza para el tratamiento de mis datos personales
+                en el marco de la Ley 1581 de 2012 y el Decreto 1377 de 2013.
+              </span>
+            </label>
+          </div>
+
+          <div class="form-hint mt-1" style="font-size:0.8rem; color: var(--gris-texto);">
+            <strong>IMPORTANTE:</strong> Tu usuario y contraseña inicial serán tu <strong>número de documento</strong>.
+          </div>
+
+          <button class="btn btn-success btn-block btn-lg mt-2" onclick="doRegister()" id="btn-register">
+            ✅ Registrarme
+          </button>
+        </div>
+
+      </div><!-- /login-form-panel -->
+    </div><!-- /login-wrapper -->
+  </div><!-- /login-bg -->
+
+  <!-- Modal aviso de privacidad -->
+  <div class="modal-overlay" id="modal-privacidad">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-privacidad')">✕</button>
+      <h3 style="margin-bottom:1rem">📋 Aviso de Privacidad</h3>
+      <div style="font-size:0.9rem; line-height:1.7; max-height:380px; overflow-y:auto">
+        <p><strong>ESE Hospital San Rafael de Cáqueza</strong> trata sus datos personales con estricto apego a la Ley 1581 de 2012 y el Decreto 1377 de 2013.</p>
+        <p class="mt-2"><strong>Finalidad:</strong> Los datos recopilados (nombre, documento, cargo, área, sede, correo) se usarán exclusivamente para:</p>
+        <ul style="margin-top:0.5rem; padding-left:1.5rem">
+          <li>Registrar la participación en la inducción SG-SST.</li>
+          <li>Generar el certificado de aprobación.</li>
+          <li>Reportes internos de cumplimiento de formación.</li>
+        </ul>
+        <p class="mt-2"><strong>Derechos:</strong> Puede conocer, actualizar, rectificar o solicitar la supresión de sus datos contactando al área de SST o al Comité de Convivencia.</p>
+        <p class="mt-2"><strong>Responsable:</strong> ESE Hospital San Rafael de Cáqueza, Cáqueza – Cundinamarca, Colombia.</p>
+        <p class="mt-2">Los datos no serán compartidos con terceros sin autorización expresa, salvo obligación legal.</p>
+      </div>
+      <div class="text-right mt-3">
+        <button class="btn btn-primary" onclick="closeModal('modal-privacidad')">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Inicializar BD
+    DB.init();
+
+    // Si ya hay sesión activa, redirigir
+    if (Auth.estaAutenticado()) {
+      const u = Auth.getUsuarioActual();
+      window.location.href = u.rol === 'admin' ? 'pages/admin.html' : 'pages/dashboard.html';
+    }
+
+    /** Alterna entre las pestañas de login y registro */
+    function switchTab(tab) {
+      document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+      document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    }
+
+    /** Realiza el login */
+    function doLogin() {
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value;
+      const alert = document.getElementById('login-alert');
+
+      if (!user || !pass) {
+        showAlert(alert, '⚠️ Completa todos los campos.');
+        return;
+      }
+
+      const result = Auth.login(user, pass);
+      if (!result.ok) {
+        showAlert(alert, '❌ ' + result.msg);
+        return;
+      }
+
+      // Redirigir según rol
+      alert.style.display = 'none';
+      const destino = result.usuario.rol === 'admin' ? '../pages/admin.html' : '../pages/dashboard.html';
+      // Desde index.html en raíz, ajustar rutas:
+      window.location.href = result.usuario.rol === 'admin' ? 'pages/admin.html' : 'pages/dashboard.html';
+    }
+
+    /** Registra un nuevo usuario */
+    function doRegister() {
+      const alertEl = document.getElementById('register-alert');
+      const successEl = document.getElementById('register-success');
+      alertEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      const datos = {
+        nombre: document.getElementById('reg-nombre').value.trim(),
+        documento: document.getElementById('reg-documento').value.trim(),
+        cargo: document.getElementById('reg-cargo').value.trim(),
+        area: document.getElementById('reg-area').value.trim(),
+        vinculacion: document.getElementById('reg-vinculacion').value,
+        sede: document.getElementById('reg-sede').value,
+        correo: document.getElementById('reg-correo').value.trim(),
+        tipoFormacion: document.getElementById('reg-formacion').value,
+        aceptaPrivacidad: document.getElementById('reg-privacidad').checked
+      };
+
+      // Validaciones
+      if (!datos.nombre || !datos.documento || !datos.cargo || !datos.area ||
+          !datos.vinculacion || !datos.sede || !datos.tipoFormacion) {
+        showAlert(alertEl, '⚠️ Completa todos los campos obligatorios (*).');
+        return;
+      }
+      if (!datos.aceptaPrivacidad) {
+        showAlert(alertEl, '⚠️ Debes aceptar el aviso de privacidad para continuar.');
+        return;
+      }
+
+      const result = DB.registrarUsuario(datos);
+      if (!result.ok) {
+        showAlert(alertEl, '❌ ' + result.msg);
+        return;
+      }
+
+      // Éxito
+      successEl.innerHTML = `✅ <strong>Registro exitoso.</strong> Tu usuario es: <code>${datos.documento}</code>. 
+        Tu contraseña inicial es también tu número de documento. ¡Bienvenido/a!`;
+      successEl.style.display = 'flex';
+
+      // Limpiar formulario
+      ['reg-nombre','reg-documento','reg-cargo','reg-area','reg-vinculacion','reg-sede','reg-correo'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      ['reg-formacion'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('reg-privacidad').checked = false;
+
+      // Ir a login tras 2.5s
+      setTimeout(() => switchTab('login'), 2500);
+    }
+
+    /** Muestra un mensaje de alerta */
+    function showAlert(el, msg) {
+      el.innerHTML = msg;
+      el.style.display = 'flex';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+
+    /** Muestra/oculta contraseña */
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    /** Muestra modal de privacidad */
+    function showPrivacidad(e) {
+      e.preventDefault();
+      document.getElementById('modal-privacidad').classList.add('active');
+    }
+
+    /** Cierra un modal por ID */
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+  </script>
+</body>
+</html>

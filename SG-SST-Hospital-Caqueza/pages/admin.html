@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin – SG-SST | Hospital Cáqueza</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="../css/admin.css" />
+  <!-- SheetJS para exportar Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo-icon">
+        <img src="../img/logo_sst.jpg" alt="Logo SST"
+             style="height:38px;width:38px;object-fit:contain;border-radius:50%"
+             onerror="this.parentElement.innerHTML='🏥'" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">SG-SST | Hospital Cáqueza</span>
+        <span class="brand-sub">Panel de Administración</span>
+      </div>
+    </div>
+    <div class="navbar-actions">
+      <span class="navbar-user">🔑 Administrador</span>
+      <button class="btn-logout" onclick="Auth.logout()">🚪 Salir</button>
+    </div>
+  </nav>
+
+  <!-- TABS DE NAVEGACIÓN ADMIN -->
+  <div class="admin-tabs-wrapper">
+    <div class="admin-tabs container">
+      <button class="admin-tab active" onclick="showSection('usuarios')" id="tab-usuarios">👥 Usuarios</button>
+      <button class="admin-tab" onclick="showSection('progreso')"  id="tab-progreso">📊 Progreso</button>
+      <button class="admin-tab" onclick="showSection('modulos')"   id="tab-modulos">📚 Módulos</button>
+      <button class="admin-tab" onclick="showSection('preguntas')" id="tab-preguntas">📝 Preguntas</button>
+      <button class="admin-tab" onclick="showSection('certificado')" id="tab-certificado">🏆 Certificado</button>
+    </div>
+  </div>
+
+  <main class="container admin-main">
+
+    <!-- ============================================================
+         SECCIÓN: USUARIOS
+         ============================================================ -->
+    <section id="sec-usuarios" class="admin-section">
+      <div class="admin-section-header">
+        <div>
+          <h2>👥 Gestión de usuarios</h2>
+          <p class="text-muted">Consulta y administra los usuarios registrados en la plataforma.</p>
+        </div>
+        <div class="admin-section-actions">
+          <button class="btn btn-success" onclick="exportarExcel()">
+            📥 Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Estadísticas rápidas -->
+      <div class="admin-stats-row" id="admin-stats-row">
+        <!-- Se llena con JS -->
+      </div>
+
+      <!-- Filtros -->
+      <div class="admin-filters card mt-3 mb-2">
+        <div class="filters-row">
+          <input type="text" class="form-control" id="filter-nombre"
+                 placeholder="🔍 Buscar por nombre o documento..."
+                 oninput="filtrarUsuarios()" style="max-width:280px" />
+          <select class="form-control form-select" id="filter-sede" onchange="filtrarUsuarios()" style="max-width:220px">
+            <option value="">Todas las sedes</option>
+            <option value="Hospital San Rafael de Cáqueza">Hospital San Rafael</option>
+            <option value="Centro de Salud Fómeque">CS Fómeque</option>
+            <option value="Centro de Salud Une">CS Une</option>
+            <option value="Centro de Salud Choachí">CS Choachí</option>
+            <option value="Centro de Salud Ubaque">CS Ubaque</option>
+            <option value="Centro de Salud Chipaque">CS Chipaque</option>
+          </select>
+          <select class="form-control form-select" id="filter-estado" onchange="filtrarUsuarios()" style="max-width:200px">
+            <option value="">Todos los estados</option>
+            <option value="completado">Completados</option>
+            <option value="en_progreso">En progreso</option>
+            <option value="sin_iniciar">Sin iniciar</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla de usuarios -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="admin-table" id="tabla-usuarios">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Documento</th>
+                <th>Cargo</th>
+                <th>Área</th>
+                <th>Sede</th>
+                <th>Vinculación</th>
+                <th>Formación</th>
+                <th>Módulos</th>
+                <th>Estado</th>
+                <th>Fecha registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-usuarios">
+              <!-- Se llena con JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="tabla-vacia" class="text-center" style="padding:2rem;display:none;color:var(--gris-texto)">
+          😕 No se encontraron usuarios con los filtros aplicados.
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN: PROGRESO
+         ============================================================ -->
+    <section id="sec-progreso" class="admin-section" style="display:none">
+      <div class="admin-section-header">
+        <div>
+          <h2>📊 Reporte de progreso</h2>
+          <p class="text-muted">Visualiza el avance de cada usuario por módulo.</p>
+        </div>
+        <button class="btn btn-success" onclick="exportarExcel()">📥 Exportar Excel</button>
+      </div>
+
+      <div class="card mt-3">
+        <table class="admin-table" id="tabla-progreso">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Sede</th>
+              <th>Módulos aprobados</th>
+              <th>% Completado</th>
+              <th>Estado final</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-progreso">
+            <!-- Se llena con JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN: MÓDULOS (edición de contenido)
+         ============================================================ -->
+    <section id="sec-modulos" class="admin-section" style="display:none">
+      <div class="admin-section-header">
+        <div>
+          <h2>📚 Edición de módulos</h2>
+          <p class="text-muted">Modifica el título, descripción y pantallas de cada módulo.</p>
+        </div>
+      </div>
+
+      <!-- Lista de módulos para editar -->
+      <div class="modulos-edit-list" id="modulos-edit-list">
+        <!-- Se llena con JS -->
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN: PREGUNTAS (edición del banco)
+         ============================================================ -->
+    <section id="sec-preguntas" class="admin-section" style="display:none">
+      <div class="admin-section-header">
+        <div>
+          <h2>📝 Edición de preguntas</h2>
+          <p class="text-muted">Administra el banco de preguntas de cada módulo.</p>
+        </div>
+      </div>
+
+      <!-- Selector de módulo -->
+      <div class="form-group" style="max-width:360px; margin-bottom:1.5rem">
+        <label class="form-label">Seleccionar módulo</label>
+        <select class="form-control form-select" id="select-modulo-preg" onchange="cargarPreguntas()">
+          <option value="">-- Elige un módulo --</option>
+        </select>
+      </div>
+
+      <div id="preguntas-editor">
+        <!-- Se llena con JS al seleccionar módulo -->
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN: CERTIFICADO (edición)
+         ============================================================ -->
+    <section id="sec-certificado" class="admin-section" style="display:none">
+      <div class="admin-section-header">
+        <div>
+          <h2>🏆 Configuración del certificado</h2>
+          <p class="text-muted">Personaliza el contenido del certificado que se genera al completar todos los módulos.</p>
+        </div>
+        <div class="admin-section-actions">
+          <button class="btn btn-primary" onclick="guardarCertConfig()">💾 Guardar cambios</button>
+          <button class="btn btn-outline" onclick="resetCertConfig()">↩️ Restaurar valores</button>
+        </div>
+      </div>
+
+      <div class="cert-edit-grid">
+
+        <!-- COLUMNA IZQUIERDA: Formulario -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">✏️ Textos del certificado</div></div>
+
+          <div class="form-group">
+            <label class="form-label">Título principal</label>
+            <input type="text" id="ce-titulo" class="form-control"
+                   placeholder="Ej. Inducción SG-SST" />
+            <small class="text-muted">El año se agrega automáticamente.</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Subtítulo</label>
+            <input type="text" id="ce-subtitulo" class="form-control"
+                   placeholder="Ej. Sistema de Gestión de Seguridad..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre de la institución</label>
+            <input type="text" id="ce-institucion" class="form-control"
+                   placeholder="ESE Hospital San Rafael de Cáqueza..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Texto del cuerpo</label>
+            <textarea id="ce-cuerpo" class="form-control" rows="4"
+                      placeholder="completó y aprobó..."></textarea>
+            <small class="text-muted">Usa [b]texto[/b] para <strong>negrita</strong>.</small>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Vigencia</label>
+              <input type="text" id="ce-vigencia" class="form-control" placeholder="Un (1) año" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Intensidad horaria</label>
+              <input type="text" id="ce-horas" class="form-control" placeholder="4 horas" />
+            </div>
+          </div>
+
+          <hr style="margin:1rem 0; border-color:var(--gris-claro)">
+          <p class="fw-bold mb-1" style="font-size:0.9rem">Firma (Profesional SST)</p>
+
+          <div class="form-group">
+            <label class="form-label">Nombre del firmante</label>
+            <input type="text" id="ce-firma-nombre" class="form-control" placeholder="Profesional SST" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input type="text" id="ce-firma-cargo" class="form-control"
+                   placeholder="Área de Seguridad y Salud en el Trabajo" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Entidad</label>
+            <input type="text" id="ce-firma-entidad" class="form-control"
+                   placeholder="ESE Hospital San Rafael de Cáqueza" />
+          </div>
+
+          <hr style="margin:1rem 0; border-color:var(--gris-claro)">
+
+          <div class="form-group">
+            <label class="form-label">Prefijo código de verificación</label>
+            <input type="text" id="ce-prefijo" class="form-control"
+                   placeholder="CERT-HSR-" style="max-width:160px" />
+            <small class="text-muted">El código único se genera automáticamente con este prefijo.</small>
+          </div>
+
+          <div id="cert-config-alert" class="alert alert-success mt-2" style="display:none"></div>
+
+          <button class="btn btn-primary btn-block mt-2" onclick="guardarCertConfig()">💾 Guardar cambios</button>
+        </div>
+
+        <!-- COLUMNA DERECHA: Vista previa miniatura -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">👁️ Vista previa</div></div>
+          <div id="cert-preview-mini" class="cert-preview-mini"></div>
+          <div class="mt-2">
+            <a href="certificado.html" target="_blank" class="btn btn-outline btn-block">
+              🔗 Ver certificado completo
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       MODAL EDITAR PANTALLA DE MÓDULO
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-editar-pantalla">
+    <div class="modal-box" style="max-width:680px">
+      <button class="modal-close" onclick="closeModal('modal-editar-pantalla')">✕</button>
+      <h3 style="margin-bottom:1.2rem">✏️ Editar pantalla de módulo</h3>
+      <input type="hidden" id="edit-mod-id" />
+      <input type="hidden" id="edit-pant-idx" />
+      <div class="form-group">
+        <label class="form-label">Título de la pantalla</label>
+        <input type="text" id="edit-pant-titulo" class="form-control" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contenido (HTML permitido)</label>
+        <textarea id="edit-pant-contenido" class="form-control" rows="8"
+                  style="font-family:monospace;font-size:0.9rem"></textarea>
+        <small class="text-muted">Puedes usar &lt;strong&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;br&gt;, etc.</small>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icono (emoji)</label>
+        <input type="text" id="edit-pant-icono" class="form-control" style="max-width:120px" />
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" onclick="guardarPantalla()">💾 Guardar cambios</button>
+        <button class="btn btn-outline" onclick="closeModal('modal-editar-pantalla')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR PREGUNTA -->
+  <div class="modal-overlay" id="modal-editar-pregunta">
+    <div class="modal-box" style="max-width:640px">
+      <button class="modal-close" onclick="closeModal('modal-editar-pregunta')">✕</button>
+      <h3 style="margin-bottom:1.2rem">✏️ Editar pregunta</h3>
+      <input type="hidden" id="edit-preg-mod-id" />
+      <input type="hidden" id="edit-preg-idx" />
+      <div class="form-group">
+        <label class="form-label">Texto de la pregunta</label>
+        <textarea id="edit-preg-texto" class="form-control" rows="3"></textarea>
+      </div>
+      <div id="edit-opciones-container">
+        <!-- 4 opciones -->
+      </div>
+      <div class="form-group">
+        <label class="form-label">Respuesta correcta</label>
+        <select id="edit-preg-correcta" class="form-control form-select">
+          <option value="0">Opción A</option>
+          <option value="1">Opción B</option>
+          <option value="2">Opción C</option>
+          <option value="3">Opción D</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Retroalimentación</label>
+        <textarea id="edit-preg-retro" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" onclick="guardarPregunta()">💾 Guardar cambios</button>
+        <button class="btn btn-outline" onclick="closeModal('modal-editar-pregunta')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR ELIMINAR USUARIO -->
+  <div class="modal-overlay" id="modal-eliminar-usuario">
+    <div class="modal-box" style="max-width:420px; text-align:center">
+      <button class="modal-close" onclick="closeModal('modal-eliminar-usuario')">✕</button>
+      <div style="font-size:3rem; margin-bottom:0.5rem">⚠️</div>
+      <h3 style="margin-bottom:0.5rem">¿Eliminar usuario?</h3>
+      <p class="text-muted mb-3">Esta acción borrará permanentemente el usuario y todo su progreso.</p>
+      <input type="hidden" id="eliminar-usuario-id" />
+      <div class="d-flex gap-2" style="justify-content:center">
+        <button class="btn btn-danger" onclick="confirmarEliminarUsuario()">🗑️ Sí, eliminar</button>
+        <button class="btn btn-outline" onclick="closeModal('modal-eliminar-usuario')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    /* ============================================================
+       PANEL DE ADMINISTRACIÓN
+       ============================================================ */
+
+    // 1. Autenticación y verificación de rol
+    if (!Auth.requerirAuth()) throw new Error('No autenticado');
+    if (!Auth.esAdmin()) {
+      alert('⚠️ Acceso no autorizado.');
+      window.location.href = 'dashboard.html';
+    }
+
+    DB.init();
+
+    // 2. Navegación entre secciones
+    function showSection(id) {
+      ['usuarios','progreso','modulos','preguntas','certificado'].forEach(s => {
+        document.getElementById('sec-' + s).style.display = s === id ? 'block' : 'none';
+        document.getElementById('tab-' + s).classList.toggle('active', s === id);
+      });
+      if (id === 'usuarios')    renderUsuarios();
+      if (id === 'progreso')    renderProgreso();
+      if (id === 'modulos')     renderModulosEdit();
+      if (id === 'preguntas')   initPreguntasSection();
+      if (id === 'certificado') initCertConfig();
+    }
+
+    // ============================================================
+    // SECCIÓN USUARIOS
+    // ============================================================
+    function renderUsuarios() {
+      const usuarios = DB.getUsuarios().filter(u => u.rol !== 'admin');
+      const modulos = DB.getModulos();
+
+      // Stats
+      let completados = 0, enProgreso = 0, sinIniciar = 0;
+      usuarios.forEach(u => {
+        const prog = DB.getProgreso(u.id);
+        const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+        if (aprobados === modulos.length) completados++;
+        else if (aprobados > 0 || Object.keys(prog.modulos).length > 0) enProgreso++;
+        else sinIniciar++;
+      });
+
+      document.getElementById('admin-stats-row').innerHTML = `
+        <div class="admin-stat-card">
+          <span class="admin-stat-num">${usuarios.length}</span>
+          <span class="admin-stat-label">Total registrados</span>
+        </div>
+        <div class="admin-stat-card success">
+          <span class="admin-stat-num">${completados}</span>
+          <span class="admin-stat-label">Completados ✅</span>
+        </div>
+        <div class="admin-stat-card warning">
+          <span class="admin-stat-num">${enProgreso}</span>
+          <span class="admin-stat-label">En progreso 📖</span>
+        </div>
+        <div class="admin-stat-card muted">
+          <span class="admin-stat-num">${sinIniciar}</span>
+          <span class="admin-stat-label">Sin iniciar</span>
+        </div>
+      `;
+
+      llenarTablaUsuarios(usuarios);
+    }
+
+    function llenarTablaUsuarios(usuarios) {
+      const modulos = DB.getModulos();
+      const tbody = document.getElementById('tbody-usuarios');
+      tbody.innerHTML = '';
+
+      if (usuarios.length === 0) {
+        document.getElementById('tabla-vacia').style.display = 'block';
+        return;
+      }
+      document.getElementById('tabla-vacia').style.display = 'none';
+
+      usuarios.forEach(u => {
+        const prog = DB.getProgreso(u.id);
+        const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+        const pct = Math.round((aprobados / modulos.length) * 100);
+
+        let estadoBadge;
+        if (aprobados === modulos.length) {
+          estadoBadge = '<span class="badge badge-success">✅ Completado</span>';
+        } else if (aprobados > 0) {
+          estadoBadge = '<span class="badge badge-primary">📖 En progreso</span>';
+        } else {
+          estadoBadge = '<span class="badge badge-muted">Sin iniciar</span>';
+        }
+
+        const fechaReg = new Date(u.fechaRegistro).toLocaleDateString('es-CO');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${u.nombre}</strong></td>
+          <td><code>${u.documento}</code></td>
+          <td>${u.cargo}</td>
+          <td>${u.area}</td>
+          <td style="font-size:0.82rem">${u.sede}</td>
+          <td>${u.vinculacion}</td>
+          <td>${u.tipoFormacion}</td>
+          <td>
+            <div style="min-width:90px">
+              <div style="font-weight:700;font-size:0.85rem">${aprobados}/${modulos.length}</div>
+              <div class="progress-container" style="height:5px;margin-top:4px">
+                <div class="progress-bar ${aprobados === modulos.length ? 'success' : ''}"
+                     style="width:${pct}%"></div>
+              </div>
+            </div>
+          </td>
+          <td>${estadoBadge}</td>
+          <td style="font-size:0.82rem">${fechaReg}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" onclick="pedirEliminar('${u.id}')">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /** Filtra la tabla según los campos de búsqueda */
+    function filtrarUsuarios() {
+      const nombre = document.getElementById('filter-nombre').value.toLowerCase();
+      const sede   = document.getElementById('filter-sede').value;
+      const estado = document.getElementById('filter-estado').value;
+      const modulos = DB.getModulos();
+
+      let usuarios = DB.getUsuarios().filter(u => u.rol !== 'admin');
+
+      if (nombre) {
+        usuarios = usuarios.filter(u =>
+          u.nombre.toLowerCase().includes(nombre) ||
+          u.documento.toLowerCase().includes(nombre)
+        );
+      }
+      if (sede) {
+        usuarios = usuarios.filter(u => u.sede === sede);
+      }
+      if (estado) {
+        usuarios = usuarios.filter(u => {
+          const prog = DB.getProgreso(u.id);
+          const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+          if (estado === 'completado') return aprobados === modulos.length;
+          if (estado === 'en_progreso') return aprobados > 0 && aprobados < modulos.length;
+          if (estado === 'sin_iniciar') return aprobados === 0;
+          return true;
+        });
+      }
+
+      llenarTablaUsuarios(usuarios);
+    }
+
+    // ============================================================
+    // EXPORTAR EXCEL
+    // ============================================================
+    function exportarExcel() {
+      if (typeof XLSX === 'undefined') {
+        alert('⚠️ La librería de Excel no está disponible. Verifica tu conexión a internet.');
+        return;
+      }
+
+      const modulos = DB.getModulos();
+      const usuarios = DB.getUsuarios().filter(u => u.rol !== 'admin');
+
+      // Hoja 1: Datos de usuarios y progreso
+      const datosUsuarios = usuarios.map(u => {
+        const prog = DB.getProgreso(u.id);
+        const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+        const fechaReg = new Date(u.fechaRegistro).toLocaleDateString('es-CO');
+
+        const row = {
+          'Nombre': u.nombre,
+          'Documento': u.documento,
+          'Cargo': u.cargo,
+          'Área': u.area,
+          'Sede': u.sede,
+          'Vinculación': u.vinculacion,
+          'Tipo formación': u.tipoFormacion,
+          'Correo': u.correo || '',
+          'Fecha registro': fechaReg,
+          'Módulos aprobados': aprobados,
+          'Total módulos': modulos.length,
+          '% Progreso': Math.round((aprobados / modulos.length) * 100) + '%',
+          'Estado': aprobados === modulos.length ? 'Completado' : aprobados > 0 ? 'En progreso' : 'Sin iniciar',
+          'Acepta privacidad': u.aceptaPrivacidad ? 'Sí' : 'No'
+        };
+
+        // Agregar columna por cada módulo
+        modulos.forEach(m => {
+          row[m.titulo] = prog.modulos[m.id]?.aprobado ? 'Aprobado' : 'Pendiente';
+        });
+
+        return row;
+      });
+
+      // Hoja 2: Detalle de intentos por módulo
+      const datosIntentos = [];
+      usuarios.forEach(u => {
+        const prog = DB.getProgreso(u.id);
+        modulos.forEach(m => {
+          const modProg = prog.modulos[m.id];
+          if (modProg?.intentos?.length > 0) {
+            modProg.intentos.forEach((intento, i) => {
+              datosIntentos.push({
+                'Nombre': u.nombre,
+                'Documento': u.documento,
+                'Sede': u.sede,
+                'Módulo': m.titulo,
+                'N.° Intento': i + 1,
+                'Fecha': new Date(intento.fecha).toLocaleDateString('es-CO'),
+                'Aprobó': intento.aprobado ? 'Sí' : 'No'
+              });
+            });
+          }
+        });
+      });
+
+      // Crear libro Excel
+      const wb = XLSX.utils.book_new();
+      const ws1 = XLSX.utils.json_to_sheet(datosUsuarios);
+      const ws2 = XLSX.utils.json_to_sheet(datosIntentos.length > 0 ? datosIntentos : [{ Info: 'No hay intentos registrados' }]);
+
+      // Ancho de columnas automático
+      const autoWidth = (ws, data) => {
+        if (data.length === 0) return;
+        const cols = Object.keys(data[0]);
+        ws['!cols'] = cols.map(c => ({ wch: Math.max(c.length, ...data.map(r => String(r[c] || '').length)) + 2 }));
+      };
+      autoWidth(ws1, datosUsuarios);
+      autoWidth(ws2, datosIntentos);
+
+      XLSX.utils.book_append_sheet(wb, ws1, 'Usuarios y Progreso');
+      XLSX.utils.book_append_sheet(wb, ws2, 'Intentos por módulo');
+
+      const fecha = new Date().toISOString().slice(0,10);
+      XLSX.writeFile(wb, `SG-SST_Usuarios_${fecha}.xlsx`);
+    }
+
+    // ============================================================
+    // PROGRESO GENERAL
+    // ============================================================
+    function renderProgreso() {
+      const modulos = DB.getModulos();
+      const usuarios = DB.getUsuarios().filter(u => u.rol !== 'admin');
+      const tbody = document.getElementById('tbody-progreso');
+      tbody.innerHTML = '';
+
+      usuarios.forEach(u => {
+        const prog = DB.getProgreso(u.id);
+        const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+        const pct = Math.round((aprobados / modulos.length) * 100);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${u.nombre}</strong><br><small class="text-muted">${u.cargo}</small></td>
+          <td style="font-size:0.82rem">${u.sede}</td>
+          <td>${aprobados} / ${modulos.length}</td>
+          <td>
+            <div class="d-flex align-center gap-1">
+              <div class="progress-container" style="flex:1; height:8px">
+                <div class="progress-bar ${pct === 100 ? 'success' : ''}" style="width:${pct}%"></div>
+              </div>
+              <span style="font-size:0.82rem; min-width:36px">${pct}%</span>
+            </div>
+          </td>
+          <td>
+            ${pct === 100
+              ? '<span class="badge badge-success">✅ Completado</span>'
+              : pct > 0
+                ? '<span class="badge badge-primary">📖 En progreso</span>'
+                : '<span class="badge badge-muted">Sin iniciar</span>'
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (usuarios.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gris-texto)">No hay usuarios registrados.</td></tr>';
+      }
+    }
+
+    // ============================================================
+    // EDICIÓN DE MÓDULOS
+    // ============================================================
+    function renderModulosEdit() {
+      const modulos = DB.getModulos();
+      const container = document.getElementById('modulos-edit-list');
+      container.innerHTML = '';
+
+      modulos.forEach(mod => {
+        const card = document.createElement('div');
+        card.className = 'card mb-2';
+        card.innerHTML = `
+          <div class="mod-edit-header" style="border-left:5px solid ${mod.color}">
+            <div class="d-flex align-center gap-2">
+              <span style="font-size:1.5rem">${mod.icono}</span>
+              <div>
+                <h4>${mod.titulo}</h4>
+                <p class="text-muted" style="font-size:0.85rem">${mod.descripcion}</p>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="togglePantallas('pant-${mod.id}')">
+              ✏️ Editar pantallas
+            </button>
+          </div>
+          <div id="pant-${mod.id}" style="display:none; margin-top:1rem">
+            <table class="admin-table">
+              <thead>
+                <tr><th>#</th><th>Título</th><th>Icono</th><th>Acciones</th></tr>
+              </thead>
+              <tbody>
+                ${mod.pantallas.map((p, i) => `
+                  <tr>
+                    <td>${i + 1}</td>
+                    <td>${p.titulo}</td>
+                    <td>${p.icono || '—'}</td>
+                    <td>
+                      <button class="btn btn-sm btn-primary"
+                              onclick="abrirEditarPantalla('${mod.id}', ${i})">
+                        ✏️ Editar
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function togglePantallas(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function abrirEditarPantalla(modId, pantIdx) {
+      const mod = DB.getModuloById(modId);
+      const pant = mod.pantallas[pantIdx];
+      document.getElementById('edit-mod-id').value = modId;
+      document.getElementById('edit-pant-idx').value = pantIdx;
+      document.getElementById('edit-pant-titulo').value = pant.titulo;
+      document.getElementById('edit-pant-contenido').value = pant.contenido;
+      document.getElementById('edit-pant-icono').value = pant.icono || '';
+      document.getElementById('modal-editar-pantalla').classList.add('active');
+    }
+
+    function guardarPantalla() {
+      const modId = document.getElementById('edit-mod-id').value;
+      const pantIdx = parseInt(document.getElementById('edit-pant-idx').value);
+      const mod = DB.getModuloById(modId);
+      const pantallas = [...mod.pantallas];
+      pantallas[pantIdx] = {
+        ...pantallas[pantIdx],
+        titulo: document.getElementById('edit-pant-titulo').value.trim(),
+        contenido: document.getElementById('edit-pant-contenido').value.trim(),
+        icono: document.getElementById('edit-pant-icono').value.trim()
+      };
+      DB.actualizarModulo(modId, { pantallas });
+      closeModal('modal-editar-pantalla');
+      renderModulosEdit();
+      showToast('✅ Pantalla actualizada correctamente.');
+    }
+
+    // ============================================================
+    // EDICIÓN DE PREGUNTAS
+    // ============================================================
+    function initPreguntasSection() {
+      const modulos = DB.getModulos();
+      const sel = document.getElementById('select-modulo-preg');
+      sel.innerHTML = '<option value="">-- Elige un módulo --</option>';
+      modulos.forEach(m => {
+        sel.innerHTML += `<option value="${m.id}">${m.numero}. ${m.titulo}</option>`;
+      });
+    }
+
+    function cargarPreguntas() {
+      const modId = document.getElementById('select-modulo-preg').value;
+      const container = document.getElementById('preguntas-editor');
+      if (!modId) { container.innerHTML = ''; return; }
+
+      const mod = DB.getModuloById(modId);
+      container.innerHTML = `
+        <div class="card">
+          <table class="admin-table">
+            <thead>
+              <tr><th>#</th><th>Pregunta</th><th>Opciones</th><th>Correcta</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              ${mod.preguntas.map((p, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td style="max-width:260px; font-size:0.88rem">${p.texto}</td>
+                  <td style="font-size:0.8rem">
+                    ${p.opciones.map((op, oi) =>
+                      `<div>${String.fromCharCode(65+oi)}. ${op}</div>`
+                    ).join('')}
+                  </td>
+                  <td><span class="badge badge-success">${String.fromCharCode(65+p.correcta)}</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-primary"
+                            onclick="abrirEditarPregunta('${mod.id}', ${i})">✏️ Editar</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function abrirEditarPregunta(modId, pregIdx) {
+      const mod = DB.getModuloById(modId);
+      const preg = mod.preguntas[pregIdx];
+      document.getElementById('edit-preg-mod-id').value = modId;
+      document.getElementById('edit-preg-idx').value = pregIdx;
+      document.getElementById('edit-preg-texto').value = preg.texto;
+      document.getElementById('edit-preg-correcta').value = preg.correcta;
+      document.getElementById('edit-preg-retro').value = preg.retroalimentacion;
+
+      const opCont = document.getElementById('edit-opciones-container');
+      opCont.innerHTML = '';
+      preg.opciones.forEach((op, oi) => {
+        opCont.innerHTML += `
+          <div class="form-group">
+            <label class="form-label">Opción ${String.fromCharCode(65+oi)}</label>
+            <input type="text" id="edit-op-${oi}" class="form-control" value="${op}" />
+          </div>
+        `;
+      });
+      // Asegurar 4 opciones si hay menos
+      for (let oi = preg.opciones.length; oi < 4; oi++) {
+        opCont.innerHTML += `
+          <div class="form-group">
+            <label class="form-label">Opción ${String.fromCharCode(65+oi)}</label>
+            <input type="text" id="edit-op-${oi}" class="form-control" value="" />
+          </div>
+        `;
+      }
+
+      document.getElementById('modal-editar-pregunta').classList.add('active');
+    }
+
+    function guardarPregunta() {
+      const modId = document.getElementById('edit-preg-mod-id').value;
+      const pregIdx = parseInt(document.getElementById('edit-preg-idx').value);
+      const mod = DB.getModuloById(modId);
+      const preguntas = [...mod.preguntas];
+
+      const opciones = [0,1,2,3].map(i => {
+        const el = document.getElementById('edit-op-' + i);
+        return el ? el.value.trim() : '';
+      }).filter(o => o !== '');
+
+      preguntas[pregIdx] = {
+        ...preguntas[pregIdx],
+        texto: document.getElementById('edit-preg-texto').value.trim(),
+        opciones,
+        correcta: parseInt(document.getElementById('edit-preg-correcta').value),
+        retroalimentacion: document.getElementById('edit-preg-retro').value.trim()
+      };
+
+      DB.actualizarModulo(modId, { preguntas });
+      closeModal('modal-editar-pregunta');
+      cargarPreguntas();
+      showToast('✅ Pregunta actualizada correctamente.');
+    }
+
+    // ============================================================
+    // ELIMINAR USUARIO
+    // ============================================================
+    function pedirEliminar(userId) {
+      document.getElementById('eliminar-usuario-id').value = userId;
+      document.getElementById('modal-eliminar-usuario').classList.add('active');
+    }
+
+    function confirmarEliminarUsuario() {
+      const userId = document.getElementById('eliminar-usuario-id').value;
+      DB.eliminarUsuario(userId);
+      closeModal('modal-eliminar-usuario');
+      renderUsuarios();
+      showToast('🗑️ Usuario eliminado.');
+    }
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-msg';
+      toast.innerHTML = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('toast-visible'), 50);
+      setTimeout(() => {
+        toast.classList.remove('toast-visible');
+        setTimeout(() => toast.remove(), 400);
+      }, 3000);
+    }
+
+    // 3. Inicializar en la sección de usuarios
+    renderUsuarios();
+
+    // ============================================================
+    // CERTIFICADO – EDICIÓN
+    // ============================================================
+    const CERT_CONFIG_KEY = 'sgsstdb_cert_config';
+
+    const CERT_DEFAULTS = {
+      titulo: 'Inducción SG-SST',
+      subtitulo: 'Sistema de Gestión de Seguridad y Salud en el Trabajo',
+      institucion: 'ESE Hospital San Rafael de Cáqueza y Centros de Salud Adscritos',
+      vigencia: 'Un (1) año',
+      horas: '4 horas',
+      firmaNombre: 'Profesional SST',
+      firmaCargo: 'Área de Seguridad y Salud en el Trabajo',
+      firmaEntidad: 'ESE Hospital San Rafael de Cáqueza',
+      textoCuerpo: 'completó y aprobó satisfactoriamente los diez (10) módulos de la [b]Inducción Interactiva SG-SST[/b] de la ESE Hospital San Rafael de Cáqueza, en la modalidad de',
+      prefijoCodigo: 'CERT-HSR-'
+    };
+
+    function getCertConfig() {
+      const raw = localStorage.getItem(CERT_CONFIG_KEY);
+      return raw ? { ...CERT_DEFAULTS, ...JSON.parse(raw) } : { ...CERT_DEFAULTS };
+    }
+
+    function initCertConfig() {
+      const cfg = getCertConfig();
+      document.getElementById('ce-titulo').value        = cfg.titulo;
+      document.getElementById('ce-subtitulo').value     = cfg.subtitulo;
+      document.getElementById('ce-institucion').value   = cfg.institucion;
+      document.getElementById('ce-cuerpo').value        = cfg.textoCuerpo;
+      document.getElementById('ce-vigencia').value      = cfg.vigencia;
+      document.getElementById('ce-horas').value         = cfg.horas;
+      document.getElementById('ce-firma-nombre').value  = cfg.firmaNombre;
+      document.getElementById('ce-firma-cargo').value   = cfg.firmaCargo;
+      document.getElementById('ce-firma-entidad').value = cfg.firmaEntidad;
+      document.getElementById('ce-prefijo').value       = cfg.prefijoCodigo;
+      renderCertPreview(cfg);
+    }
+
+    function guardarCertConfig() {
+      const cfg = {
+        titulo:       document.getElementById('ce-titulo').value.trim()        || CERT_DEFAULTS.titulo,
+        subtitulo:    document.getElementById('ce-subtitulo').value.trim()     || CERT_DEFAULTS.subtitulo,
+        institucion:  document.getElementById('ce-institucion').value.trim()   || CERT_DEFAULTS.institucion,
+        textoCuerpo:  document.getElementById('ce-cuerpo').value.trim()        || CERT_DEFAULTS.textoCuerpo,
+        vigencia:     document.getElementById('ce-vigencia').value.trim()      || CERT_DEFAULTS.vigencia,
+        horas:        document.getElementById('ce-horas').value.trim()         || CERT_DEFAULTS.horas,
+        firmaNombre:  document.getElementById('ce-firma-nombre').value.trim()  || CERT_DEFAULTS.firmaNombre,
+        firmaCargo:   document.getElementById('ce-firma-cargo').value.trim()   || CERT_DEFAULTS.firmaCargo,
+        firmaEntidad: document.getElementById('ce-firma-entidad').value.trim() || CERT_DEFAULTS.firmaEntidad,
+        prefijoCodigo:document.getElementById('ce-prefijo').value.trim()       || CERT_DEFAULTS.prefijoCodigo,
+      };
+      localStorage.setItem(CERT_CONFIG_KEY, JSON.stringify(cfg));
+      renderCertPreview(cfg);
+      const alertEl = document.getElementById('cert-config-alert');
+      alertEl.innerHTML = '✅ Configuración guardada. Los nuevos certificados usarán estos datos.';
+      alertEl.style.display = 'flex';
+      setTimeout(() => alertEl.style.display = 'none', 4000);
+    }
+
+    function resetCertConfig() {
+      if (!confirm('¿Restaurar los valores predeterminados del certificado?')) return;
+      localStorage.removeItem(CERT_CONFIG_KEY);
+      initCertConfig();
+      showToast('↩️ Valores restaurados.');
+    }
+
+    /** Mini preview del certificado en el panel admin */
+    function renderCertPreview(cfg) {
+      const anoActual = new Date().getFullYear();
+      const cuerpoBase = cfg.textoCuerpo.replace(/\[b\](.*?)\[\/b\]/g, '<strong>$1</strong>');
+      const modulos = DB.getModulos();
+
+      document.getElementById('cert-preview-mini').innerHTML = `
+        <div class="cert-mini-box">
+          <div class="cert-mini-stripe">
+            <img src="../img/logo_sst.jpg" alt="SST" class="cert-mini-logo" />
+            <div>
+              <div class="cert-mini-inst">${cfg.institucion}</div>
+              <div class="cert-mini-sub">Cundinamarca – Colombia</div>
+            </div>
+          </div>
+          <div class="cert-mini-body">
+            <div class="cert-mini-label">CERTIFICADO DE APROBACIÓN</div>
+            <div class="cert-mini-title">${cfg.titulo} ${anoActual}</div>
+            <div class="cert-mini-subtitle">${cfg.subtitulo}</div>
+            <div class="cert-mini-certifica">La institución certifica que:</div>
+            <div class="cert-mini-nombre">[ Nombre del participante ]</div>
+            <div class="cert-mini-cuerpo">
+              con documento N.° [doc], cargo [cargo], área [área],<br>${cuerpoBase} [modalidad].
+            </div>
+            <div class="cert-mini-info">
+              <span>📅 Fecha de emisión</span>
+              <span>⏱ ${cfg.vigencia}</span>
+              <span>🕐 ${cfg.horas}</span>
+            </div>
+            <div class="cert-mini-firma">
+              <div class="cert-mini-firma-linea"></div>
+              <div class="cert-mini-firma-txt">${cfg.firmaNombre}</div>
+              <div class="cert-mini-firma-cargo">${cfg.firmaCargo}</div>
+            </div>
+            <div class="cert-mini-codigo">${cfg.prefijoCodigo}XXXXXXXX</div>
+          </div>
+        </div>`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificado – SG-SST | Hospital Cáqueza</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <!-- html2canvas (captura el DOM → PDF idéntico a la vista previa) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { background: var(--gris-fondo); }
+
+    /* ── BARRA DE ACCIONES ── */
+    .cert-page-header {
+      background: linear-gradient(135deg, var(--azul-oscuro), var(--azul-primario));
+      color: #FFF;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .cert-actions {
+      max-width: 900px;
+      margin: 1.2rem auto 0;
+      padding: 0 1rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .cert-preview-wrapper {
+      max-width: 900px;
+      margin: 1.5rem auto 2rem;
+      padding: 0 1rem;
+    }
+
+    /* ── CERTIFICADO VISUAL (lo que se captura con html2canvas) ── */
+    #certificado-visual {
+      background: #FFFFFF;
+      border: 10px solid #1565C0;
+      border-radius: 10px;
+      padding: 2.5rem 3.5rem;
+      position: relative;
+      text-align: center;
+      font-family: 'Georgia', serif;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    /* Marca de agua */
+    #certificado-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('../img/logo_sst.jpg') center/300px no-repeat;
+      opacity: 0.04;
+      pointer-events: none;
+    }
+
+    /* Franja superior azul */
+    .cert-top-stripe {
+      background: linear-gradient(135deg, #0D47A1, #1565C0);
+      margin: -2.5rem -3.5rem 2rem;
+      padding: 1.4rem 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+    }
+
+    .cert-logo-wrap img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.4);
+      background: #fff;
+      padding: 4px;
+    }
+
+    .cert-entidad-wrap { text-align: left; }
+    .cert-entidad-nombre {
+      font-size: 1rem; font-weight: 800; color: #FFFFFF;
+      font-family: 'Segoe UI', sans-serif; line-height: 1.3;
+    }
+    .cert-entidad-sub {
+      font-size: 0.78rem; color: rgba(255,255,255,0.75);
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* Eslogan en franja */
+    .cert-eslogan-stripe {
+      margin-left: auto;
+      font-size: 0.72rem;
+      font-style: italic;
+      color: rgba(255,255,255,0.80);
+      font-family: 'Segoe UI', sans-serif;
+      text-align: right;
+      max-width: 220px;
+      line-height: 1.5;
+    }
+
+    .cert-title-label {
+      font-size: 0.75rem;
+      letter-spacing: 4px;
+      color: #90A4AE;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .cert-main-title {
+      font-size: 2rem; font-weight: 700; color: #0D47A1;
+      margin-bottom: 0.4rem; line-height: 1.2;
+    }
+
+    .cert-subtitle {
+      font-size: 0.88rem; color: #546E7A; letter-spacing: 0.5px;
+      margin-bottom: 1.8rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .cert-certifica {
+      font-size: 0.95rem; color: #37474F; margin-bottom: 1rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .cert-nombre {
+      font-size: 1.9rem; font-weight: 700; color: #1B5E20;
+      margin: 0.2rem 0 1.6rem;
+      padding: 0.4rem 2rem;
+      border-top: 2px solid #1565C0;
+      border-bottom: 2px solid #1565C0;
+      display: inline-block;
+    }
+
+    .cert-cuerpo {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem; color: #37474F; line-height: 1.8;
+      max-width: 580px; margin: 0 auto 1.5rem;
+    }
+    .cert-cuerpo strong { color: #0D47A1; }
+
+    .cert-modulos-box {
+      background: #F5F7FA; border: 1px solid #BBDEFB;
+      border-radius: 8px; padding: 0.9rem 1.4rem;
+      margin: 0 auto 1.5rem; text-align: left; max-width: 580px;
+    }
+    .cert-modulos-box h4 {
+      font-size: 0.8rem; color: #1565C0; margin-bottom: 0.5rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .cert-modulos-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3px 1rem; font-size: 0.74rem; color: #2E7D32;
+    }
+    .cert-modulo-item::before { content: '✓ '; }
+
+    .cert-info-row {
+      display: flex; justify-content: center; gap: 2rem;
+      flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .cert-info-item { text-align: center; }
+    .cert-info-label {
+      font-size: 0.68rem; color: #90A4AE; text-transform: uppercase;
+      letter-spacing: 1px; display: block;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .cert-info-value {
+      font-size: 0.9rem; font-weight: 700; color: #37474F;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* Una sola firma (Profesional SST) */
+    .cert-firmas {
+      display: flex; justify-content: center;
+      margin-top: 1.5rem;
+      border-top: 1px solid #ECEFF1; padding-top: 1.2rem;
+    }
+    .cert-firma { text-align: center; min-width: 200px; }
+    .cert-firma-linea { border-top: 2px solid #37474F; margin-bottom: 0.4rem; }
+    .cert-firma-nombre {
+      font-size: 0.82rem; font-weight: 700; color: #37474F;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .cert-firma-cargo {
+      font-size: 0.7rem; color: #90A4AE;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .cert-codigo {
+      margin-top: 1.2rem; font-size: 0.68rem; color: #CFD8DC;
+      font-family: monospace;
+    }
+
+    @media (max-width: 768px) {
+      #certificado-visual { padding: 2rem 1.5rem; border-width: 7px; }
+      .cert-top-stripe { margin: -2rem -1.5rem 1.5rem; padding: 1rem 1.5rem; }
+      .cert-main-title { font-size: 1.4rem; }
+      .cert-nombre { font-size: 1.3rem; }
+      .cert-modulos-grid { grid-template-columns: 1fr; }
+      .cert-eslogan-stripe { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR -->
+  <div class="cert-page-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="../img/logo_sst.jpg" alt="SST"
+           style="width:40px;height:40px;border-radius:50%;object-fit:contain;background:#fff;padding:3px" />
+      <div>
+        <div style="font-weight:700;font-size:1rem">Certificado de Aprobación</div>
+        <div style="font-size:0.8rem;opacity:0.8">SG-SST – Inducción Interactiva</div>
+      </div>
+    </div>
+    <button class="btn btn-outline" style="color:#FFF;border-color:rgba(255,255,255,0.4)"
+            onclick="window.location.href='dashboard.html'">← Volver</button>
+  </div>
+
+  <!-- ACCIONES -->
+  <div class="cert-actions">
+    <button class="btn btn-primary btn-lg" id="btn-descargar" onclick="descargarPDF()">
+      ⬇️ Descargar PDF
+    </button>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">🏠 Volver al menú</button>
+  </div>
+
+  <!-- PREVIEW CERTIFICADO -->
+  <div class="cert-preview-wrapper">
+    <div id="certificado-visual">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <div class="cert-actions">
+    <button class="btn btn-primary btn-lg" onclick="descargarPDF()">⬇️ Descargar PDF</button>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    /* ============================================================
+       CERTIFICADO SG-SST – Hospital Cáqueza
+       PDF = captura exacta del div #certificado-visual vía html2canvas
+       ============================================================ */
+
+    if (!Auth.requerirAuth()) throw new Error('No autenticado');
+    const usuario = Auth.getUsuarioActual();
+    DB.init();
+
+    if (!DB.todoAprobado(usuario.id)) {
+      alert('⚠️ Debes aprobar todos los módulos antes de descargar el certificado.');
+      window.location.href = 'dashboard.html';
+    }
+
+    const usuarioCompleto = DB.findUsuarioById(usuario.id);
+    const prog    = DB.getProgreso(usuario.id);
+    const modulos = DB.getModulos();
+
+    // ── Configuración editable del certificado (admin puede cambiarla)
+    const CERT_CONFIG_KEY = 'sgsstdb_cert_config';
+    function getCertConfig() {
+      const raw = localStorage.getItem(CERT_CONFIG_KEY);
+      return raw ? JSON.parse(raw) : {
+        titulo: 'Inducción SG-SST',
+        subtitulo: 'Sistema de Gestión de Seguridad y Salud en el Trabajo',
+        institucion: 'ESE Hospital San Rafael de Cáqueza y Centros de Salud Adscritos',
+        vigencia: 'Un (1) año',
+        horas: '4 horas',
+        firmaNombre: 'Profesional SST',
+        firmaCargo: 'Área de Seguridad y Salud en el Trabajo',
+        firmaEntidad: 'ESE Hospital San Rafael de Cáqueza',
+        textoCuerpo: 'completó y aprobó satisfactoriamente los diez (10) módulos de la [b]Inducción Interactiva SG-SST[/b] de la ESE Hospital San Rafael de Cáqueza, en la modalidad de',
+        prefijoCodigo: 'CERT-HSR-'
+      };
+    }
+
+    // ── Código único de verificación
+    function generarCodigo(userId) {
+      const cfg = getCertConfig();
+      const seed = userId + '_cert';
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) {
+        hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return (cfg.prefijoCodigo || 'CERT-HSR-') + Math.abs(hash).toString(16).toUpperCase().padStart(8,'0');
+    }
+
+    const codigoCert = generarCodigo(usuario.id);
+    const anoActual  = new Date().getFullYear();
+
+    // Fecha de la última aprobación
+    let fechaAprobacion = new Date();
+    modulos.forEach(m => {
+      if (prog.modulos[m.id]?.fechaAprobacion) {
+        const fa = new Date(prog.modulos[m.id].fechaAprobacion);
+        if (fa > fechaAprobacion) fechaAprobacion = fa;
+      }
+    });
+    const fechaFormato = fechaAprobacion.toLocaleDateString('es-CO', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    // ── Renderizar certificado ──────────────────────────────────
+    function renderCertificado() {
+      const cfg = getCertConfig();
+      const nombre = usuarioCompleto?.nombre || usuario.nombre;
+      const doc    = usuarioCompleto?.documento || '—';
+      const cargo  = usuarioCompleto?.cargo     || '—';
+      const area   = usuarioCompleto?.area      || '—';
+
+      // Construir texto del cuerpo respetando [b]...[/b]
+      const cuerpoBase = cfg.textoCuerpo
+        .replace(/\[b\](.*?)\[\/b\]/g, '<strong>$1</strong>');
+
+      document.getElementById('certificado-visual').innerHTML = `
+        <!-- Franja superior con logo e institución -->
+        <div class="cert-top-stripe">
+          <div class="cert-logo-wrap">
+            <img src="../img/logo_sst.jpg" alt="Logo SST"
+                 onerror="this.src='';this.style.display='none'" />
+          </div>
+          <div class="cert-entidad-wrap">
+            <div class="cert-entidad-nombre">${cfg.institucion}</div>
+            <div class="cert-entidad-sub">Cundinamarca – Colombia</div>
+          </div>
+          <div class="cert-eslogan-stripe">
+            "Cuidarnos,<br>Principio de un Trabajo Seguro"
+          </div>
+        </div>
+
+        <!-- Título -->
+        <div class="cert-title-label">Certificado de aprobación</div>
+        <div class="cert-main-title">${cfg.titulo} ${anoActual}</div>
+        <div class="cert-subtitle">${cfg.subtitulo}</div>
+
+        <div class="cert-certifica">La institución certifica que:</div>
+        <div class="cert-nombre">${nombre}</div>
+
+        <div class="cert-cuerpo">
+          con documento de identidad N.° <strong>${doc}</strong>,
+          cargo <strong>${cargo}</strong>,
+          área de <strong>${area}</strong>,
+          ${cuerpoBase} <strong>${usuarioCompleto?.tipoFormacion || 'Inducción'}</strong>.
+        </div>
+
+        <!-- Módulos -->
+        <div class="cert-modulos-box">
+          <h4>✅ Módulos aprobados (${modulos.length}/${modulos.length})</h4>
+          <div class="cert-modulos-grid">
+            ${modulos.map(m => `<div class="cert-modulo-item">${m.titulo}</div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Datos -->
+        <div class="cert-info-row">
+          <div class="cert-info-item">
+            <span class="cert-info-label">Fecha de emisión</span>
+            <span class="cert-info-value">${fechaFormato}</span>
+          </div>
+          <div class="cert-info-item">
+            <span class="cert-info-label">Vigencia</span>
+            <span class="cert-info-value">${cfg.vigencia}</span>
+          </div>
+          <div class="cert-info-item">
+            <span class="cert-info-label">Intensidad horaria</span>
+            <span class="cert-info-value">${cfg.horas}</span>
+          </div>
+        </div>
+
+        <!-- Una sola firma -->
+        <div class="cert-firmas">
+          <div class="cert-firma">
+            <div class="cert-firma-linea"></div>
+            <div class="cert-firma-nombre">${cfg.firmaNombre}</div>
+            <div class="cert-firma-cargo">${cfg.firmaCargo}</div>
+            <div class="cert-firma-cargo">${cfg.firmaEntidad}</div>
+          </div>
+        </div>
+
+        <div class="cert-codigo">Código de verificación: ${codigoCert}</div>
+      `;
+    }
+
+    renderCertificado();
+
+    /* ============================================================
+       DESCARGA PDF — captura html2canvas → jsPDF
+       Garantiza que el PDF sea IDÉNTICO a la vista previa en pantalla
+       ============================================================ */
+    async function descargarPDF() {
+      const btn = document.getElementById('btn-descargar');
+      btn.disabled = true;
+      btn.textContent = '⏳ Generando PDF...';
+
+      try {
+        const el = document.getElementById('certificado-visual');
+
+        // html2canvas captura el DOM exactamente como se ve
+        const canvas = await html2canvas(el, {
+          scale: 2,              // doble resolución = mejor calidad
+          useCORS: true,         // permite cargar imágenes cross-origin
+          backgroundColor: '#FFFFFF',
+          logging: false,
+          imageTimeout: 5000
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width/2, canvas.height/2] });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width/2, canvas.height/2);
+        const nombre = (usuarioCompleto?.nombre || usuario.nombre).replace(/\s+/g,'_');
+        pdf.save(`Certificado_SG-SST_${nombre}.pdf`);
+
+      } catch (err) {
+        console.error('Error generando PDF:', err);
+        alert('No se pudo generar el PDF automáticamente. Usa el botón 🖨️ Imprimir y elige "Guardar como PDF".');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⬇️ Descargar PDF';
+      }
+    }
+
+    // Auto-descargar si llega desde el dashboard
+    if (sessionStorage.getItem('generar_certificado') === '1') {
+      sessionStorage.removeItem('generar_certificado');
+      setTimeout(() => descargarPDF(), 1000);
+    }
+  </script>
+</body>
+</html>

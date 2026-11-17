@@ -1,0 +1,362 @@
+/*
+ * login.css
+ * Estilos específicos para la pantalla de login/registro
+ */
+
+body.login-body {
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   FONDO CON GRADIENTE + BLOBS DECORATIVOS
+   ============================================================ */
+.login-bg {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0D47A1 0%, #1565C0 40%, #1976D2 70%, #1565C0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.login-blob-1 {
+  width: 500px; height: 500px;
+  background: #FFFFFF;
+  top: -150px; left: -150px;
+  animation: blobFloat 8s ease-in-out infinite;
+}
+
+.login-blob-2 {
+  width: 350px; height: 350px;
+  background: #42A5F5;
+  bottom: -100px; right: -80px;
+  animation: blobFloat 10s ease-in-out infinite reverse;
+}
+
+.login-blob-3 {
+  width: 200px; height: 200px;
+  background: #2E7D32;
+  top: 60%; left: 10%;
+  animation: blobFloat 6s ease-in-out infinite;
+}
+
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, -20px) scale(1.05); }
+}
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+.login-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 920px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.30);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   PANEL IZQUIERDO – BRANDING
+   ============================================================ */
+.login-brand-panel {
+  background: linear-gradient(165deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%);
+  padding: 1.8rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand-panel::before {
+  content: '';
+  position: absolute;
+  width: 300px; height: 300px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+  bottom: -100px; right: -80px;
+}
+
+/* Imagen de portada 3D */
+.brand-portada-wrap {
+  width: calc(100% + 4rem);  /* sangra a los bordes del panel */
+  margin: -1.8rem -2rem 1.2rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  max-height: 200px;
+}
+
+.brand-portada-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+/* Logo institucional */
+.brand-logo-container { margin-bottom: 0.8rem; }
+
+.brand-logo-img {
+  max-height: 52px;
+  max-width: 220px;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* lo convierte a blanco para que resalte sobre el fondo azul */
+  display: block;
+}
+
+.brand-logo-circle {
+  width: 68px; height: 68px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.20);
+}
+
+.brand-logo-emoji { font-size: 2.2rem; }
+
+.brand-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.3;
+  margin-bottom: 0.4rem;
+}
+
+/* Eslogan corporativo */
+.brand-eslogan {
+  font-size: 0.88rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.95);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid rgba(255,255,255,0.4);
+  padding-left: 10px;
+}
+
+.brand-subtitle {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.brand-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.brand-badge {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.brand-desc {
+  font-size: 0.84rem;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   PANEL DERECHO – FORMULARIO
+   ============================================================ */
+.login-form-panel {
+  padding: 2.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+/* Tabs */
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--gris-claro);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 1.8rem;
+}
+
+.login-tab {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--gris-texto);
+  transition: all 0.2s ease;
+}
+
+.login-tab.active {
+  background: var(--azul-primario);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.3);
+}
+
+/* Títulos del formulario */
+.form-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gris-oscuro);
+  margin-bottom: 0.3rem;
+}
+
+.form-hint {
+  font-size: 0.85rem;
+  color: var(--gris-texto);
+  margin-bottom: 1.4rem;
+}
+
+/* Grid 2 columnas en registro */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+/* Input password con ojito */
+.input-password-wrapper {
+  position: relative;
+}
+
+.input-password-wrapper .form-control {
+  padding-right: 44px;
+}
+
+.btn-toggle-pass {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.btn-toggle-pass:hover { opacity: 1; }
+
+/* Caja de sugerencia de credenciales */
+.login-hint-box {
+  background: #E3F2FD;
+  border: 1px solid #90CAF9;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #1565C0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+
+.login-hint-box code {
+  background: rgba(21,101,192,0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* Privacidad */
+.privacy-box {
+  background: var(--gris-fondo);
+  border: 1px solid var(--gris-claro);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 0.5rem;
+}
+
+.privacy-label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.83rem;
+  color: var(--gris-texto);
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.privacy-label input[type="checkbox"] {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--azul-primario);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .login-wrapper {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+
+  .login-brand-panel {
+    padding: 0 0 1.5rem;
+    align-items: flex-start;
+  }
+
+  .brand-portada-wrap {
+    width: 100%;
+    margin: 0 0 1.2rem;
+    max-height: 160px;
+  }
+
+  .brand-portada-img { height: 160px; }
+
+  .login-brand-panel h1,
+  .login-brand-panel p,
+  .brand-badges { padding: 0 1.5rem; }
+
+  .brand-logo-container { padding: 0 1.5rem; }
+  .brand-badges { justify-content: flex-start; }
+
+  .login-form-panel {
+    padding: 1.8rem 1.5rem;
+    max-height: none;
+  }
+
+  .form-grid-2 { grid-template-columns: 1fr; gap: 0; }
+}
+
+@media (max-width: 480px) {
+  .login-brand-panel { display: none; }
+  .login-wrapper { border-radius: 16px; }
+  .login-form-panel { padding: 1.5rem 1.2rem; }
+}

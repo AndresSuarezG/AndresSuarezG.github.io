@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Módulo – SG-SST | Hospital Cáqueza</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="../css/modulo.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo-icon">
+        <img src="../img/logo_sst.jpg" alt="Logo SST"
+             style="height:38px;width:38px;object-fit:contain;border-radius:50%"
+             onerror="this.parentElement.innerHTML='🏥'" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">SG-SST | Hospital Cáqueza</span>
+        <span class="brand-sub" id="mod-nav-titulo">Módulo</span>
+      </div>
+    </div>
+    <div class="navbar-actions">
+      <button class="btn-logout btn-sm" onclick="window.location.href='dashboard.html'">← Menú</button>
+      <button class="btn-logout" onclick="Auth.logout()">🚪 Salir</button>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <main class="container modulo-main">
+
+    <!-- HEADER DEL MÓDULO -->
+    <div class="modulo-header card" id="modulo-header"></div>
+
+    <!-- PANTALLAS DE CONTENIDO -->
+    <div id="seccion-pantallas">
+      <div class="d-flex justify-between align-center mt-3 mb-2">
+        <h3>📖 Material de estudio</h3>
+        <span class="badge badge-primary" id="pant-contador">0 / 0</span>
+      </div>
+      <div class="pantallas-stepper" id="pantallas-stepper"></div>
+      <div class="pantalla-card card" id="pantalla-card"></div>
+      <div class="pantallas-nav mt-2">
+        <button class="btn btn-outline" id="btn-pant-prev" onclick="cambiarPantalla(-1)" disabled>← Anterior</button>
+        <button class="btn btn-primary"  id="btn-pant-next" onclick="cambiarPantalla(1)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- EVALUACIÓN -->
+    <div id="seccion-evaluacion" style="display:none">
+      <div class="eval-header mt-3 mb-2">
+        <h3>📝 Evaluación del módulo</h3>
+        <p class="text-muted" style="font-size:0.9rem">
+          Responde correctamente las 2 preguntas para aprobar el módulo. Puedes reintentar las veces que necesites.
+        </p>
+      </div>
+      <div id="preguntas-container"></div>
+      <div id="eval-resultado" style="display:none"></div>
+      <div class="eval-actions mt-3" id="eval-actions">
+        <button class="btn btn-primary btn-lg" onclick="enviarEvaluacion()" id="btn-evaluar">✅ Enviar respuestas</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    /* ============================================================
+       LÓGICA DEL MÓDULO – SG-SST Hospital Cáqueza
+       ============================================================ */
+
+    if (!Auth.requerirAuth()) throw new Error('No autenticado');
+    const usuario = Auth.getUsuarioActual();
+
+    const moduloId = sessionStorage.getItem('modulo_actual');
+    if (!moduloId) window.location.href = 'dashboard.html';
+
+    DB.init();
+    const modulo = DB.getModuloById(moduloId);
+    if (!modulo) window.location.href = 'dashboard.html';
+
+    if (!DB.moduloDesbloqueado(usuario.id, moduloId)) {
+      alert('Este módulo aún está bloqueado. Debes aprobar el módulo anterior.');
+      window.location.href = 'dashboard.html';
+    }
+
+    let pantallaActual   = 0;
+    let preguntasActuales = [];
+    let respuestasUsuario = {};
+
+    // Mapeo imágenes por módulo
+    const moduloImgs = {
+      mod_1: '../img/mod1_sgsst.png', mod_2: '../img/mod2_politicas.png',
+      mod_3: '../img/mod3_objetivos.png', mod_4: '../img/mod4_responsabilidades.png',
+      mod_5: '../img/mod5_comites.png', mod_6: '../img/mod6_peligros.png',
+      mod_7: '../img/mod7_reporte.png', mod_8: '../img/mod8_emergencias.png',
+      mod_9: '../img/mod9_medicina.png', mod_10: '../img/mod10_comunicacion.png',
+    };
+
+    // ── UTILIDADES ──────────────────────────────────────────────
+
+    /** Busca el índice del módulo actual en la lista completa */
+    function getModuloActualIdx() {
+      return DB.getModulos().findIndex(m => m.id === moduloId);
+    }
+
+    /** Retorna el siguiente módulo (o null si es el último) */
+    function getSiguienteModulo() {
+      const todos = DB.getModulos();
+      const idx = getModuloActualIdx();
+      return idx < todos.length - 1 ? todos[idx + 1] : null;
+    }
+
+    // ── RENDER HEADER ────────────────────────────────────────────
+    function renderHeader() {
+      const prog = DB.getProgreso(usuario.id);
+      const pantVistas = prog.modulos[moduloId]?.pantallasVistas || [];
+      const aprobado   = prog.modulos[moduloId]?.aprobado || false;
+      const imgSrc     = moduloImgs[moduloId] || '';
+
+      document.getElementById('modulo-header').innerHTML = `
+        ${imgSrc ? `
+          <div class="mod-header-img">
+            <img src="${imgSrc}" alt="${modulo.titulo}" onerror="this.parentElement.style.display='none'" />
+            <div class="mod-header-img-overlay" style="background:linear-gradient(to right,${modulo.color}dd,transparent)"></div>
+          </div>` : ''}
+        <div class="mod-header-content" style="border-left:6px solid ${modulo.color}">
+          <div class="mod-header-left">
+            <span class="mod-header-icono">${modulo.icono}</span>
+            <div>
+              <span class="mod-numero-badge" style="background:${modulo.color}">Módulo ${modulo.numero}</span>
+              <h2 class="mt-1">${modulo.titulo}</h2>
+              <p class="text-muted" style="font-size:0.9rem">${modulo.descripcion}</p>
+            </div>
+          </div>
+          <div class="mod-header-right">
+            ${aprobado
+              ? `<div class="mod-aprobado-badge">✅ Aprobado</div>`
+              : `<div class="mod-pending-info">
+                  <div>${pantVistas.length}/${modulo.pantallas.length} pantallas</div>
+                  <div style="font-size:0.8rem;opacity:0.7">revisadas</div>
+                </div>`}
+          </div>
+        </div>`;
+      document.getElementById('mod-nav-titulo').textContent = 'Módulo ' + modulo.numero;
+    }
+
+    // ── STEPPER ──────────────────────────────────────────────────
+    function renderStepper() {
+      const pantVistas = DB.getProgreso(usuario.id).modulos[moduloId]?.pantallasVistas || [];
+      const stepper = document.getElementById('pantallas-stepper');
+      stepper.innerHTML = '';
+      modulo.pantallas.forEach((pant, i) => {
+        const visitada = pantVistas.includes(i);
+        const activa   = i === pantallaActual;
+        const dot = document.createElement('div');
+        dot.className = 'stepper-dot' +
+          (activa   ? ' stepper-active'  : '') +
+          (visitada ? ' stepper-visited' : '');
+        dot.textContent = i + 1;
+        dot.title   = pant.titulo;
+        dot.onclick = () => irPantalla(i);
+        stepper.appendChild(dot);
+        if (i < modulo.pantallas.length - 1) {
+          const line = document.createElement('div');
+          line.className = 'stepper-line' + (visitada ? ' stepper-line-done' : '');
+          stepper.appendChild(line);
+        }
+      });
+      document.getElementById('pant-contador').textContent = (pantallaActual + 1) + ' / ' + modulo.pantallas.length;
+    }
+
+    // ── PANTALLA DE CONTENIDO ────────────────────────────────────
+    function renderPantalla() {
+      const pantalla  = modulo.pantallas[pantallaActual];
+      const pantVistas = DB.getProgreso(usuario.id).modulos[moduloId]?.pantallasVistas || [];
+      const yaVista   = pantVistas.includes(pantallaActual);
+      const esUltima  = pantallaActual === modulo.pantallas.length - 1;
+      const todasVistas = modulo.pantallas.every((_, i) => pantVistas.includes(i));
+
+      document.getElementById('pantalla-card').innerHTML = `
+        <div class="pantalla-inner">
+          <div class="pantalla-icon-wrap">
+            <span class="pantalla-icon">${pantalla.icono || '📋'}</span>
+            <span class="pantalla-titulo-num">Pantalla ${pantallaActual + 1} de ${modulo.pantallas.length}</span>
+          </div>
+          <h3 class="pantalla-titulo">${pantalla.titulo}</h3>
+          <div class="pantalla-contenido">${pantalla.contenido}</div>
+          ${!yaVista
+            ? `<button class="btn btn-success marcar-btn" onclick="marcarVista()">✔️ Marcar como revisado</button>`
+            : `<div class="ya-revisado">✅ Esta pantalla ya fue revisada</div>`}
+        </div>`;
+
+      // Botón Anterior
+      document.getElementById('btn-pant-prev').disabled = pantallaActual === 0;
+
+      // Botón Siguiente / Ir a evaluación
+      const btnNext = document.getElementById('btn-pant-next');
+      if (esUltima && todasVistas) {
+        btnNext.textContent = '📝 Ir a evaluación';
+        btnNext.className = 'btn btn-success';
+        btnNext.onclick = mostrarEvaluacion;
+      } else if (esUltima && yaVista && !todasVistas) {
+        // Hay pantallas anteriores sin marcar — permitir navegar
+        btnNext.textContent = 'Siguiente →';
+        btnNext.className = 'btn btn-primary';
+        btnNext.onclick = () => cambiarPantalla(1);
+        btnNext.disabled = true; // es la última
+      } else {
+        btnNext.textContent = 'Siguiente →';
+        btnNext.className = 'btn btn-primary';
+        btnNext.disabled = false;
+        btnNext.onclick = () => cambiarPantalla(1);
+      }
+    }
+
+    function marcarVista() {
+      DB.marcarPantallaVista(usuario.id, moduloId, pantallaActual);
+      renderStepper();
+      renderPantalla();
+      // Si se acaba de marcar la última → actualizar botón
+      const pantVistas = DB.getProgreso(usuario.id).modulos[moduloId]?.pantallasVistas || [];
+      const esUltima   = pantallaActual === modulo.pantallas.length - 1;
+      if (esUltima && pantVistas.length >= modulo.pantallas.length) {
+        const btnNext = document.getElementById('btn-pant-next');
+        btnNext.textContent = '📝 Ir a evaluación';
+        btnNext.className   = 'btn btn-success';
+        btnNext.onclick     = mostrarEvaluacion;
+        btnNext.disabled    = false;
+      }
+    }
+
+    function cambiarPantalla(dir) {
+      const nueva = pantallaActual + dir;
+      if (nueva >= 0 && nueva < modulo.pantallas.length) irPantalla(nueva);
+    }
+
+    function irPantalla(idx) {
+      pantallaActual = idx;
+      renderStepper();
+      renderPantalla();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── EVALUACIÓN ───────────────────────────────────────────────
+    function mostrarEvaluacion() {
+      const pantVistas = DB.getProgreso(usuario.id).modulos[moduloId]?.pantallasVistas || [];
+      if (pantVistas.length < modulo.pantallas.length) {
+        alert('Debes revisar todas las pantallas antes de acceder a la evaluación.');
+        return;
+      }
+      document.getElementById('seccion-pantallas').style.display = 'none';
+      document.getElementById('seccion-evaluacion').style.display = 'block';
+      preguntasActuales = seleccionarPreguntasAleatorias(2);
+      respuestasUsuario = {};
+      renderPreguntas();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function seleccionarPreguntasAleatorias(n) {
+      const banco = [...modulo.preguntas];
+      for (let i = banco.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [banco[i], banco[j]] = [banco[j], banco[i]];
+      }
+      return banco.slice(0, n);
+    }
+
+    function renderPreguntas() {
+      const container = document.getElementById('preguntas-container');
+      container.innerHTML = '';
+      preguntasActuales.forEach((preg, qi) => {
+        // Mezclar opciones preservando cuál es la correcta
+        const ops = preg.opciones.map((op, i) => ({ texto: op, original: i }));
+        for (let i = ops.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [ops[i], ops[j]] = [ops[j], ops[i]];
+        }
+        const card = document.createElement('div');
+        card.className = 'pregunta-card card';
+        card.innerHTML = `
+          <div class="pregunta-numero">Pregunta ${qi + 1} de ${preguntasActuales.length}</div>
+          <h4 class="pregunta-texto">${preg.texto}</h4>
+          <div class="opciones-container" id="opciones-${qi}">
+            ${ops.map((op, oi) => `
+              <label class="opcion-label" id="opcion-${qi}-${oi}">
+                <input type="radio" name="preg-${qi}" value="${op.original}"
+                       onchange="seleccionarOpcion(${qi},${op.original})" />
+                <span class="opcion-letra">${String.fromCharCode(65+oi)}</span>
+                <span class="opcion-texto">${op.texto}</span>
+              </label>`).join('')}
+          </div>`;
+        container.appendChild(card);
+      });
+      document.getElementById('eval-resultado').style.display = 'none';
+      document.getElementById('eval-actions').innerHTML = `
+        <button class="btn btn-primary btn-lg" onclick="enviarEvaluacion()" id="btn-evaluar">✅ Enviar respuestas</button>`;
+    }
+
+    function seleccionarOpcion(pregIdx, opcionOriginal) {
+      respuestasUsuario[pregIdx] = opcionOriginal;
+    }
+
+    function enviarEvaluacion() {
+      if (Object.keys(respuestasUsuario).length < preguntasActuales.length) {
+        alert('Por favor responde todas las preguntas antes de enviar.');
+        return;
+      }
+      let correctas = 0;
+      const detalles = [];
+      preguntasActuales.forEach((preg, qi) => {
+        const resp = respuestasUsuario[qi];
+        const ok   = resp === preg.correcta;
+        if (ok) correctas++;
+        detalles.push({ preg, resp, ok });
+      });
+      const aprobado = correctas === preguntasActuales.length;
+      DB.registrarIntento(usuario.id, moduloId, respuestasUsuario, aprobado);
+
+      // Colores en opciones
+      preguntasActuales.forEach((preg, qi) => {
+        document.querySelectorAll(`#opciones-${qi} .opcion-label`).forEach(label => {
+          const input = label.querySelector('input');
+          const val   = parseInt(input.value);
+          if (val === preg.correcta)                     label.classList.add('opcion-correcta');
+          else if (val === respuestasUsuario[qi])        label.classList.add('opcion-incorrecta');
+          input.disabled = true;
+        });
+      });
+
+      // Resultado
+      const resultDiv = document.getElementById('eval-resultado');
+      resultDiv.style.display = 'block';
+
+      if (aprobado) {
+        // Calcular siguiente módulo
+        const sigMod = getSiguienteModulo();
+        resultDiv.innerHTML = `
+          <div class="result-aprobado">
+            <div class="result-icon">🎉</div>
+            <div>
+              <h3>¡Módulo aprobado!</h3>
+              <p>Respondiste correctamente las ${correctas} preguntas. ¡Excelente!</p>
+              ${detalles.map(d => `
+                <div class="retro-item retro-ok">
+                  ✅ <strong>${d.preg.texto}</strong><br>
+                  <span style="font-size:0.85rem">${d.preg.retroalimentacion}</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        // Botones: menú principal + siguiente módulo (si existe)
+        document.getElementById('eval-actions').innerHTML = `
+          <button class="btn btn-outline btn-lg" onclick="window.location.href='dashboard.html'">
+            🏠 Menú principal
+          </button>
+          ${sigMod
+            ? `<button class="btn btn-success btn-lg" onclick="irSiguienteModulo('${sigMod.id}')">
+                 Siguiente módulo: ${sigMod.titulo} →
+               </button>`
+            : `<button class="btn btn-success btn-lg" onclick="window.location.href='certificado.html'">
+                 🏆 Descargar certificado
+               </button>`}`;
+        renderHeader(); // actualizar estado aprobado en el header
+      } else {
+        resultDiv.innerHTML = `
+          <div class="result-reprobado">
+            <div class="result-icon">📚</div>
+            <div>
+              <h3>Necesitas repasar</h3>
+              <p>${correctas} de ${preguntasActuales.length} correctas. Repasa el contenido e intenta de nuevo.</p>
+              ${detalles.map(d => `
+                <div class="retro-item ${d.ok ? 'retro-ok' : 'retro-err'}">
+                  ${d.ok ? '✅' : '❌'} <strong>${d.preg.texto}</strong><br>
+                  <span style="font-size:0.85rem">${d.preg.retroalimentacion}</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        /* FIX BUCLE: "Repasar" vuelve a las pantallas del contenido;
+           "Intentar de nuevo" genera nuevas preguntas y va directo a la evaluación
+           SIN pasar por las pantallas (ya están marcadas como vistas). */
+        document.getElementById('eval-actions').innerHTML = `
+          <button class="btn btn-outline btn-lg" onclick="revisarContenido()">
+            📖 Repasar el contenido
+          </button>
+          <button class="btn btn-primary btn-lg" onclick="reintentarEvaluacion()">
+            🔄 Intentar de nuevo
+          </button>`;
+      }
+    }
+
+    /** Vuelve a las pantallas para repasar el material */
+    function revisarContenido() {
+      pantallaActual = 0;
+      document.getElementById('seccion-evaluacion').style.display = 'none';
+      document.getElementById('seccion-pantallas').style.display  = 'block';
+      renderStepper();
+      renderPantalla();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /**
+     * FIX: Reintenta la evaluación directamente.
+     * Como todas las pantallas ya están marcadas, va a evaluación sin
+     * pasar por las pantallas (elimina el bucle anterior).
+     */
+    function reintentarEvaluacion() {
+      preguntasActuales = seleccionarPreguntasAleatorias(2);
+      respuestasUsuario = {};
+      renderPreguntas();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /** Navega al siguiente módulo */
+    function irSiguienteModulo(id) {
+      sessionStorage.setItem('modulo_actual', id);
+      window.location.reload();
+    }
+
+    // ── INICIALIZAR ──────────────────────────────────────────────
+    renderHeader();
+    renderStepper();
+    renderPantalla();
+
+    // Banner si ya está aprobado (repaso libre)
+    if (DB.getProgreso(usuario.id).modulos[moduloId]?.aprobado) {
+      const banner = document.createElement('div');
+      banner.className = 'alert alert-success mt-2';
+      banner.innerHTML = '✅ <strong>¡Ya aprobaste este módulo!</strong> Puedes repasar el contenido libremente.';
+      document.querySelector('.modulo-main').insertBefore(banner, document.getElementById('seccion-pantallas'));
+    }
+  </script>
+</body>
+</html>

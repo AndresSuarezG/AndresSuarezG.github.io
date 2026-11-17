@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – SG-SST Inducción | Hospital Cáqueza</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <!-- Logo real del hospital; fallback al emoji si no carga -->
+      <div class="logo-icon" id="nav-logo-wrap">
+        <img src="../img/logo_sst.jpg" alt="Logo SST"
+             style="height:38px;width:38px;object-fit:contain;border-radius:50%"
+             onerror="this.parentElement.innerHTML='🏥'" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">SG-SST | Hospital Cáqueza</span>
+        <span class="brand-sub">Inducción Interactiva</span>
+      </div>
+    </div>
+    <div class="navbar-actions">
+      <span class="navbar-user" id="nav-username">👤 Cargando...</span>
+      <button class="btn-logout" onclick="Auth.logout()">🚪 Salir</button>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="container dash-main">
+
+    <!-- ENCABEZADO BIENVENIDA -->
+    <div class="dash-welcome-card card">
+      <!-- Imagen de portada como banner del hero -->
+      <div class="dash-welcome-hero">
+        <img src="../img/portada.png" alt="SG-SST Inducción"
+             onerror="this.parentElement.classList.add('no-img')" />
+        <div class="dash-welcome-hero-overlay"></div>
+      </div>
+      <div class="dash-welcome-body">
+        <div class="dash-welcome-left">
+          <div class="dash-avatar">🧑‍⚕️</div>
+          <div>
+            <h2 id="welcome-name">Bienvenido/a</h2>
+            <p id="welcome-sede" class="text-muted" style="font-size:0.9rem"></p>
+          </div>
+        </div>
+        <div class="dash-welcome-right">
+          <div class="dash-stat">
+            <span class="dash-stat-num" id="stat-completados">0</span>
+            <span class="dash-stat-label">Módulos aprobados</span>
+          </div>
+          <div class="dash-divider"></div>
+          <div class="dash-stat">
+            <span class="dash-stat-num">10</span>
+            <span class="dash-stat-label">Total módulos</span>
+          </div>
+          <div class="dash-divider"></div>
+          <div class="dash-stat">
+            <span class="dash-stat-num" id="stat-porcentaje">0%</span>
+            <span class="dash-stat-label">Progreso</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRA DE PROGRESO GENERAL -->
+    <div class="card mt-3">
+      <div class="d-flex justify-between align-center mb-1">
+        <span class="fw-bold" style="font-size:0.95rem">Progreso general</span>
+        <span class="badge badge-primary" id="prog-label">0 / 10</span>
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" id="main-progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- BOTÓN CERTIFICADO (oculto hasta completar todo) -->
+    <div id="cert-banner" class="cert-banner" style="display:none">
+      <div class="cert-banner-content">
+        <span class="cert-banner-icon">🏆</span>
+        <div>
+          <strong>¡Felicitaciones! Has completado todos los módulos.</strong>
+          <p>Ya puedes descargar tu certificado de aprobación de la Inducción SG-SST.</p>
+        </div>
+      </div>
+      <button class="btn btn-success" onclick="generarCertificado()">
+        📄 Descargar certificado PDF
+      </button>
+    </div>
+
+    <!-- GRID DE MÓDULOS -->
+    <h3 class="mt-4 mb-2" style="color:var(--gris-oscuro)">📚 Módulos de formación</h3>
+    <div class="modulos-grid" id="modulos-grid">
+      <!-- Se genera dinámicamente -->
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="dash-footer">
+    <span>ESE Hospital San Rafael de Cáqueza • SG-SST 2026</span>
+    <span>🔒 Todos los derechos reservados</span>
+  </footer>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    /* ============================================================
+       DASHBOARD DEL INVITADO
+       ============================================================ */
+
+    // 1. Verificar autenticación
+    if (!Auth.requerirAuth()) throw new Error('No autenticado');
+
+    const usuario = Auth.getUsuarioActual();
+
+    // Si es admin, redirigir al panel de admin
+    if (usuario.rol === 'admin') {
+      window.location.href = 'admin.html';
+    }
+
+    // 2. Inicializar BD
+    DB.init();
+
+    // 3. Actualizar navbar
+    document.getElementById('nav-username').textContent = '👤 ' + usuario.nombre.split(' ')[0];
+
+    // 4. Renderizar bienvenida
+    document.getElementById('welcome-name').textContent = '¡Hola, ' + usuario.nombre + '!';
+
+    // Obtener datos completos del usuario desde BD
+    const usuarioCompleto = DB.findUsuarioById(usuario.id);
+    if (usuarioCompleto) {
+      document.getElementById('welcome-sede').textContent =
+        '📍 ' + usuarioCompleto.sede + '  •  💼 ' + usuarioCompleto.cargo;
+    }
+
+    // 5. Calcular y mostrar progreso
+    function actualizarProgreso() {
+      const prog = DB.getProgreso(usuario.id);
+      const modulos = DB.getModulos();
+      const aprobados = modulos.filter(m => prog.modulos[m.id]?.aprobado).length;
+      const pct = Math.round((aprobados / modulos.length) * 100);
+
+      document.getElementById('stat-completados').textContent = aprobados;
+      document.getElementById('stat-porcentaje').textContent = pct + '%';
+      document.getElementById('prog-label').textContent = aprobados + ' / ' + modulos.length;
+      document.getElementById('main-progress-bar').style.width = pct + '%';
+      if (pct === 100) {
+        document.getElementById('main-progress-bar').classList.add('success');
+      }
+
+      // Mostrar banner de certificado si aplica
+      if (DB.todoAprobado(usuario.id)) {
+        document.getElementById('cert-banner').style.display = 'flex';
+      }
+    }
+
+    // Mapeo de imágenes por módulo
+    const moduloImgs = {
+      'mod_1':  '../img/mod1_sgsst.png',
+      'mod_2':  '../img/mod2_politicas.png',
+      'mod_3':  '../img/mod3_objetivos.png',
+      'mod_4':  '../img/mod4_responsabilidades.png',
+      'mod_5':  '../img/mod5_comites.png',
+      'mod_6':  '../img/mod6_peligros.png',
+      'mod_7':  '../img/mod7_reporte.png',
+      'mod_8':  '../img/mod8_emergencias.png',
+      'mod_9':  '../img/mod9_medicina.png',
+      'mod_10': '../img/mod10_comunicacion.png',
+    };
+
+    // 6. Renderizar tarjetas de módulos
+    function renderModulos() {
+      const grid = document.getElementById('modulos-grid');
+      const modulos = DB.getModulos();
+      const prog = DB.getProgreso(usuario.id);
+      grid.innerHTML = '';
+
+      modulos.forEach((mod, idx) => {
+        const desbloqueado = DB.moduloDesbloqueado(usuario.id, mod.id);
+        const aprobado = prog.modulos[mod.id]?.aprobado === true;
+        const pantallasVistas = prog.modulos[mod.id]?.pantallasVistas?.length || 0;
+        const totalPantallas = mod.pantallas.length;
+        const pctPantallas = Math.round((pantallasVistas / totalPantallas) * 100);
+        const imgSrc = moduloImgs[mod.id] || '';
+
+        let estado, estadoClass, iconEstado;
+        if (aprobado) {
+          estado = 'Aprobado'; estadoClass = 'estado-aprobado'; iconEstado = '✅';
+        } else if (!desbloqueado) {
+          estado = 'Bloqueado'; estadoClass = 'estado-bloqueado'; iconEstado = '🔒';
+        } else if (pantallasVistas > 0) {
+          estado = 'En progreso'; estadoClass = 'estado-progreso'; iconEstado = '📖';
+        } else {
+          estado = 'Disponible'; estadoClass = 'estado-disponible'; iconEstado = '▶️';
+        }
+
+        const card = document.createElement('div');
+        card.className = 'modulo-card ' + (desbloqueado ? '' : 'modulo-bloqueado') + (aprobado ? ' modulo-aprobado' : '');
+        card.innerHTML = `
+          <!-- Imagen ilustrativa del módulo -->
+          ${imgSrc ? `
+          <div class="modulo-card-img ${!desbloqueado ? 'modulo-img-locked' : ''}">
+            <img src="${imgSrc}" alt="${mod.titulo}"
+                 onerror="this.parentElement.style.display='none'" />
+            ${!desbloqueado ? '<div class="modulo-lock-overlay">🔒</div>' : ''}
+            ${aprobado ? '<div class="modulo-done-overlay">✅</div>' : ''}
+          </div>` : ''}
+          <div class="modulo-card-header" style="border-left: 5px solid ${mod.color}">
+            <div class="modulo-numero-wrap">
+              <span class="modulo-icono">${mod.icono}</span>
+              <span class="modulo-numero" style="background:${mod.color}">Módulo ${mod.numero}</span>
+            </div>
+            <span class="modulo-estado ${estadoClass}">${iconEstado} ${estado}</span>
+          </div>
+          <div class="modulo-card-body">
+            <h4 class="modulo-titulo">${mod.titulo}</h4>
+            <p class="modulo-desc">${mod.descripcion}</p>
+            ${desbloqueado && !aprobado ? `
+              <div class="modulo-progress-mini">
+                <div class="d-flex justify-between" style="font-size:0.75rem; margin-bottom:4px">
+                  <span>Pantallas revisadas</span>
+                  <span>${pantallasVistas}/${totalPantallas}</span>
+                </div>
+                <div class="progress-container" style="height:6px">
+                  <div class="progress-bar" style="width:${pctPantallas}%"></div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+          <div class="modulo-card-footer">
+            <span class="modulo-info">📝 ${mod.preguntas.length} preguntas</span>
+            ${desbloqueado
+              ? `<button class="btn btn-sm ${aprobado ? 'btn-outline' : 'btn-primary'}"
+                         onclick="irModulo('${mod.id}')">
+                   ${aprobado ? '👁️ Revisar' : (pantallasVistas > 0 ? '▶️ Continuar' : '▶️ Iniciar')}
+                 </button>`
+              : `<button class="btn btn-sm" disabled style="opacity:0.4">🔒 Bloqueado</button>`
+            }
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    /** Navega al módulo seleccionado */
+    function irModulo(moduloId) {
+      sessionStorage.setItem('modulo_actual', moduloId);
+      window.location.href = 'modulo.html';
+    }
+
+    /** Genera y descarga el certificado PDF */
+    function generarCertificado() {
+      sessionStorage.setItem('generar_certificado', '1');
+      window.location.href = 'certificado.html';
+    }
+
+    // Inicializar
+    actualizarProgreso();
+    renderModulos();
+  </script>
+</body>
+</html>
